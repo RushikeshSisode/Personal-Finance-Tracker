@@ -1,0 +1,23 @@
+.label-input{
+    text-transform:capitalize;
+    margin-bottom: 0.3rem ;
+    font-size: 0.8rem;
+}
+.custo-input{
+    border-width:0 ;
+    border-bottom-width:1px;
+    width: 100%;
+ 
+    font-size:0.8rem;
+    opacity: 0.8;
+}
+
+.custo-input:focus{
+    outline: none;
+    opacity: 1;
+    transition: all 0.2s;
+}
+
+.custo-input::placeholder{
+    color: grey;
+}

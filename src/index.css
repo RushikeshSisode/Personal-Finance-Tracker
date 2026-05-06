@@ -1,0 +1,64 @@
+@import "antd/dist/reset.css";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root{
+    --theme:#2970ff;
+    --black:#000;
+    --white:#fff;
+    --shadow:0px 0px 30px 8px rgba(227,227,227,0.75);
+}
+body{
+    margin: 0;
+    padding: 0;
+  font-family: "Montserrat", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: weight;
+  font-style: normal;
+}
+
+input{
+    font-family: "Montserrat", sans-serif;
+}
+
+
+.custom-input{
+    border: 0px;
+    border-bottom:1px solid black ;
+    padding: 0.5rem 0rem;
+    width: 100%;
+    border-radius: 0;
+}
+
+.custom-input{
+    margin-top: -1rem;
+}
+
+.custom-input::placeholder{
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.custom-input:focus{
+    outline: none;
+    opacity: 1;
+    transition: all 0.3s;
+}
+
+
+.charts-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 25px;
+  margin: 20px 0;
+}
+
+.chart-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  height: 420px; /* consistent size */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
