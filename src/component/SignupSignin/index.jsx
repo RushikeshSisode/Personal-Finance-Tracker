@@ -1,77 +1,71 @@
-import React, { useState } from 'react';
-import './style.css';
-import Input from '../Input';
-import CustomButton from '../CustomButton';
-import { toast } from 'react-toastify';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from "react";
+import "./style.css";
+import Input from "../Input";
+import CustomButton from "../CustomButton";
+import { toast } from "react-toastify";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { auth } from '../../firebase';
-import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc } from "firebase/firestore"; 
-import { db } from '../../firebase';     
+import { auth } from "../../firebase";
+import { useNavigate } from "react-router-dom";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 
 const SignupSignin = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loginForm, setLoginForm] = useState(false); 
+  // const [loading, setLoading] = useState(false); // not good UI
+  // ✅ Separate loading state for each button
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const [loginForm, setLoginForm] = useState(false);
   const navigate = useNavigate();
   const provider = new GoogleAuthProvider();
 
-  function signupWithEmail() { 
-    setLoading(true);
-    if (!name || !email || !password || !confirmPassword) {
-      toast.error("All fields are mandatory");
-      setLoading(false);
-      return;
+  async function signupWithEmail() {
+    if (!validateSignupFields()) return;
+    setEmailLoading(true); // ✅ only email button loads
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+      const user = userCredential.user;
+      await createDoc(user);
+      toast.success("User Created Successfully!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setEmailLoading(false); // ✅ only email button stops
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
     }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        console.log(user);
-        toast.success("User Created Successfully!");
-        setName("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        createDoc(user);
-        navigate('/dashboard')
-      })
-      .catch((error) => {
-        toast.error(error.message);
-      })
-      .finally(() => setLoading(false));
   }
 
-  function loginWithEmail() {
-    setLoading(true);
+  async function loginWithEmail() {
     if (!email || !password) {
       toast.error("Both fields are required");
-      setLoading(false);
       return;
     }
-    console.log(email);
-    console.log(password);
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        console.log("Logged in user:", user);
-        toast.success("Login Successful!");
-         navigate('/dashboard')
-      })
-      .catch((error) => {
-        toast.error(error.message);
-      })
-      .finally(() => setLoading(false));
+    setEmailLoading(true); // ✅ only email button loads
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Login Successful!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setEmailLoading(false); // ✅ only email button stops
+    }
   }
 
   function toggleForm() {
@@ -82,53 +76,51 @@ const SignupSignin = () => {
     setConfirmPassword("");
   }
 
-  async function createDoc(user){
+  async function createDoc(user) {
     setLoading(true);
-    if(!user) return;
+    if (!user) return;
 
-    const userRef=doc(db,'users',user.uid);
-    const userData=await getDoc(userRef);
+    const userRef = doc(db, "users", user.uid);
+    const userData = await getDoc(userRef);
 
-    if(!userData.exists()){
-    try{
-      await setDoc(doc(db, "users", user.uid), {
-        name:user.displayName ? user.displayName:name,
-        email:user.email,
-        photoURL:user.photoURL?user.photoURL:"",
-        createdAt:new Date(),
-      });
-      toast.success("Doc created")  
-      setLoading(false);
-    }catch(err){
-      toast.error(err.message)
+    if (!userData.exists()) {
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          name: user.displayName ? user.displayName : name,
+          email: user.email,
+          photoURL: user.photoURL ? user.photoURL : "",
+          createdAt: new Date(),
+        });
+        toast.success("Doc created");
+        setLoading(false);
+      } catch (err) {
+        toast.error(err.message);
+        setLoading(false);
+      }
+    } else {
+      toast.error("Doc already exits");
       setLoading(false);
     }
-  }else{
-    toast.error("Doc already exits")
-    setLoading(false);
   }
-}
 
-async function googleAuth() {
-  setLoading(true);
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-    await createDoc(user);
-    toast.success("Logged in Successfully");
-    navigate('/dashboard');
-
-  } catch (error) {
-    toast.error(error.message); // ✅ fixed: .message extracts the string
-  } finally {
-    setLoading(false); // ✅ always runs, whether success or error
+  async function googleAuth() {
+    setGoogleLoading(true); // ✅ only google button loads
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      await createDoc(user);
+      toast.success("Logged in Successfully");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setGoogleLoading(false); // ✅ only google button stops
+    }
   }
-}
 
   return (
     <>
-      { loginForm ? (
+      {loginForm ? (
         <div className="signup-wrapper">
           <h2 className="title">
             Login <span style={{ color: "var(--theme)" }}>TrackMyFunds.</span>
@@ -151,42 +143,40 @@ async function googleAuth() {
               type="password"
             />
             <br />
-
+            // ✅ Each button uses its own loading state
             <CustomButton
-              text={loading ? "Loading..." : "Login with Email and Password"}
+              text={
+                emailLoading ? "Loading..." : "Signup Using Email and Password"
+              }
               onClick={(e) => {
                 e.preventDefault();
-                loginWithEmail();
+                signupWithEmail();
               }}
-              disabled={loading}
+              disabled={emailLoading || googleLoading} // ✅ disable both during any operation
             />
             <p className="or">or</p>
             <CustomButton
-              text={loading ? "Loading..." : "Login with Google"}
+              text={googleLoading ? "Loading..." : "Signup Using Google"}
               blue
-                onClick={(e)=>{
+              onClick={(e) => {
                 e.preventDefault();
                 googleAuth();
               }}
+              disabled={emailLoading || googleLoading} // ✅ disable both during any operation
             />
             <p className="altpara">
               Don’t have an account?{" "}
-              <button
-                type="button"
-                className="clickme"
-                onClick={toggleForm}
-              >
+              <button type="button" className="clickme" onClick={toggleForm}>
                 Click Here
               </button>
             </p>
           </form>
         </div>
       ) : (
-        
-        
         <div className="signup-wrapper">
           <h2 className="title">
-            Sign Up on <span style={{ color: "var(--theme)" }}>TrackMyFunds.</span>
+            Sign Up on{" "}
+            <span style={{ color: "var(--theme)" }}>TrackMyFunds.</span>
           </h2>
           <form>
             <Input
@@ -232,7 +222,7 @@ async function googleAuth() {
             <CustomButton
               text={loading ? "Loading..." : "Signup Using Google"}
               blue
-               onClick={(e)=>{
+              onClick={(e) => {
                 e.preventDefault();
                 googleAuth();
               }}
@@ -240,11 +230,7 @@ async function googleAuth() {
 
             <p className="altpara">
               Already have an account?{" "}
-              <button
-                type="button"
-                className="clickme"
-                onClick={toggleForm}
-              >
+              <button type="button" className="clickme" onClick={toggleForm}>
                 Click Here
               </button>
             </p>
@@ -256,8 +242,3 @@ async function googleAuth() {
 };
 
 export default SignupSignin;
-
-
-
-
-
